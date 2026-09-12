@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بوابة مخططات المطحن الهندسي | Mill Schematics Portal</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBase: '#0b0f19',
+                        darkCard: '#131b2e',
+                        darkHover: '#1c2842',
+                        darkBorder: '#23314f',
+                        brandCyan: '#06b6d4',
+                        brandGold: '#f59e0b',
+                        brandEmerald: '#10b981',
+                        brandBlue: '#3b82f6',
+                        brandRose: '#f43f5e'
+                    },
+                    fontFamily: {
+                        cairo: ['Cairo', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Google Fonts & Font Awesome Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #0b0f19;
+            color: #f1f5f9;
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(6, 182, 212, 0.03) 0%, transparent 40%),
+                radial-gradient(circle at 85% 85%, rgba(245, 158, 11, 0.03) 0%, transparent 40%);
+        }
+
+        .card-hover {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card-hover:hover {
+            transform: translateY(-4px);
+            border-color: rgba(6, 182, 212, 0.5);
+            box-shadow: 0 12px 24px -8px rgba(6, 182, 212, 0.2);
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track { background: #0b0f19; }
+        ::-webkit-scrollbar-thumb { background: #23314f; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #06b6d4; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-brandCyan/30 selection:text-brandCyan">
+
+    <!-- Top Global Header -->
+    <header class="sticky top-0 z-40 bg-darkCard/90 backdrop-blur-md border-b border-darkBorder px-4 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4 shadow-xl">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brandCyan/20 to-brandEmerald/20 border border-brandCyan/40 flex items-center justify-center text-brandCyan text-xl shadow-lg">
+                <i class="fa-solid fa-industry"></i>
+            </div>
+            <div>
+                <h1 class="text-lg md:text-xl font-black text-white tracking-wide">مخططات المطحن الهندسي</h1>
+                <p class="text-[11px] text-slate-400">دليل التصفح السريع للمخططات والكروت الخارجية</p>
+            </div>
+        </div>
+
+        <!-- Global Action Controls -->
+        <div class="flex items-center gap-2">
+            <!-- Add New Action Button (Adapts based on current level) -->
+            <button id="primaryAddBtn" onclick="handleAddAction()" class="bg-gradient-to-r from-brandCyan to-brandEmerald hover:opacity-95 text-darkBase font-extrabold text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 transition shadow-md shadow-brandCyan/10">
+                <i class="fa-solid fa-plus text-sm"></i>
+                <span id="primaryAddBtnText">إضافة تصنيف جديد</span>
+            </button>
+
+            <div class="h-6 w-px bg-darkBorder mx-1 hidden sm:block"></div>
+
+            <button onclick="exportData()" title="تصدير بيانات JSON" class="p-2.5 rounded-xl bg-darkCard border border-darkBorder text-slate-400 hover:text-brandCyan transition text-xs">
+                <i class="fa-solid fa-download"></i>
+            </button>
+            <button onclick="triggerImport()" title="استيراد بيانات JSON" class="p-2.5 rounded-xl bg-darkCard border border-darkBorder text-slate-400 hover:text-brandEmerald transition text-xs">
+                <i class="fa-solid fa-upload"></i>
+            </button>
+            <button onclick="confirmReset()" title="إعادة تعيين للافتراضي" class="p-2.5 rounded-xl bg-darkCard border border-darkBorder text-slate-400 hover:text-brandRose transition text-xs">
+                <i class="fa-solid fa-rotate-left"></i>
+            </button>
+            <input type="file" id="importFileInput" onchange="importData(event)" class="hidden" accept=".json">
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 md:px-8 py-6 space-y-6">
+
+        <!-- Breadcrumbs Navigation & Search Bar -->
+        <div class="bg-darkCard border border-darkBorder rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg">
+            
+            <!-- Breadcrumbs Trail -->
+            <nav class="flex items-center gap-2 text-xs md:text-sm font-bold w-full md:w-auto">
+                <button onclick="showMainCategories()" class="text-slate-400 hover:text-brandCyan transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-house"></i>
+                    <span>الرئيسية (التصنيفات)</span>
+                </button>
+                <div id="breadcrumbSubNav" class="hidden items-center gap-2 text-slate-500">
+                    <i class="fa-solid fa-chevron-left text-[10px]"></i>
+                    <span id="breadcrumbCategoryTitle" class="text-brandCyan font-black"></span>
+                </div>
+            </nav>
+
+            <!-- Quick Search Input -->
+            <div class="relative w-full md:w-80">
+                <i class="fa-solid fa-magnifying-glass absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+                <input type="text" id="searchInput" oninput="handleSearch()" placeholder="بحث في المخططات..." class="w-full bg-darkBase border border-darkBorder rounded-xl pl-3 pr-9 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brandCyan transition">
+            </div>
+        </div>
+
+        <!-- Section Title & Back Button -->
+        <div class="flex items-center justify-between border-b border-darkBorder/60 pb-3">
+            <div class="flex items-center gap-3">
+                <button id="backToCatBtn" onclick="showMainCategories()" class="hidden bg-darkCard hover:bg-darkHover text-brandCyan border border-darkBorder p-2 rounded-xl text-xs transition">
+                    <i class="fa-solid fa-arrow-right ml-1"></i> العودة للتصنيفات
+                </button>
+                <div class="w-2.5 h-6 rounded-full bg-gradient-to-b from-brandCyan to-brandEmerald"></div>
+                <h2 id="viewSectionTitle" class="text-base md:text-lg font-black text-white">التصنيفات الرئيسية</h2>
+            </div>
+            <span id="itemCountBadge" class="text-[11px] font-bold text-slate-400 bg-darkCard border border-darkBorder px-3 py-1 rounded-xl">
+                0
+            </span>
+        </div>
+
+        <!-- Dynamic Grid View -->
+        <div id="dynamicGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <!-- Rendered dynamically via JavaScript -->
+        </div>
+
+    </main>
+
+    <!-- Modal: Add/Edit Main Category -->
+    <div id="categoryModal" class="fixed inset-0 bg-darkBase/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-darkCard max-w-md w-full rounded-2xl p-5 border border-darkBorder shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-darkBorder pb-3">
+                <h3 id="catModalTitle" class="font-extrabold text-sm text-white flex items-center gap-2">
+                    <i class="fa-solid fa-folder-plus text-brandCyan"></i> إضافة تصنيف جديد
+                </h3>
+                <button onclick="closeModal('categoryModal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+
+            <input type="hidden" id="editCatId">
+
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">اسم التصنيف الرئيسي *</label>
+                    <input type="text" id="catTitleInput" placeholder="مثال: قسم السيور والنواقل" class="w-full bg-darkBase border border-darkBorder rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-brandCyan transition">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">الوصف المختصر</label>
+                    <input type="text" id="catDescInput" placeholder="مثال: يحتوي على جميع مخططات السيور والبراريم" class="w-full bg-darkBase border border-darkBorder rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-brandCyan transition">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">الأيقونة</label>
+                    <select id="catIconInput" class="w-full bg-darkBase border border-darkBorder rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brandCyan transition">
+                        <option value="fa-arrows-split-up-and-left">سيور ونواقل (Conveyors)</option>
+                        <option value="fa-bolt">لوحات كهرباء (MCC)</option>
+                        <option value="fa-filter">تنظيف وغرابيل (Cleaning)</option>
+                        <option value="fa-gear">طحن وإنتاج (Milling)</option>
+                        <option value="fa-boxes-stacked">تعبئة وتغليف (Packing)</option>
+                        <option value="fa-wind">هواء ونيوماتيك (Pneumatics)</option>
+                        <option value="fa-microchip">PLC وربط آلي (Automation)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-3 border-t border-darkBorder">
+                <button onclick="closeModal('categoryModal')" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-400 bg-darkHover transition">إلغاء</button>
+                <button onclick="saveCategory()" class="px-4 py-2 rounded-xl text-xs font-extrabold bg-brandCyan text-darkBase hover:bg-cyan-400 transition">حفظ التصنيف</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Add/Edit Schematic Card -->
+    <div id="schematicModal" class="fixed inset-0 bg-darkBase/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-darkCard max-w-md w-full rounded-2xl p-5 border border-darkBorder shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-darkBorder pb-3">
+                <h3 id="schematicModalTitle" class="font-extrabold text-sm text-white flex items-center gap-2">
+                    <i class="fa-solid fa-file-circle-plus text-brandEmerald"></i> إضافة كارت مخطط جديد
+                </h3>
+                <button onclick="closeModal('schematicModal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+
+            <input type="hidden" id="editCardId">
+
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">اسم الكارت / المخطط *</label>
+                    <input type="text" id="cardTitleInput" placeholder="مثال: سير تغذية القمح الخام C01" class="w-full bg-darkBase border border-darkBorder rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-brandCyan transition">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">اسم ملف HTML الموجه له (.html) *</label>
+                    <div class="relative">
+                        <input type="text" id="cardFileInput" placeholder="مثال: conveyor_c01.html أو سير_القمح_الخام.html" class="w-full bg-darkBase border border-darkBorder rounded-xl pl-3 pr-3 py-2 text-xs text-white font-mono dir-ltr text-left focus:outline-none focus:border-brandCyan transition">
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-1">عند الضغط على الكارت سيتم الانتقال لهذا الملف بنفس المجلد.</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">كود المخطط (ID)</label>
+                        <input type="text" id="cardCodeInput" placeholder="C01-ELE" class="w-full bg-darkBase border border-darkBorder rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brandCyan transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">نوع المخطط</label>
+                        <select id="cardTypeInput" class="w-full bg-darkBase border border-darkBorder rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brandCyan transition">
+                            <option value="دائرة كنترول وبور">دائرة كنترول وبور</option>
+                            <option value="مخطط نيوماتيك">مخطط نيوماتيك</option>
+                            <option value="خريطة PLC">خريطة PLC</option>
+                            <option value="مخطط ميكانيكي">مخطط ميكانيكي</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">وصف الكارت</label>
+                    <input type="text" id="cardDescInput" placeholder="مثال: لوحة التشغيل والإنترلوك الخاص بمحرك السير" class="w-full bg-darkBase border border-darkBorder rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-brandCyan transition">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-3 border-t border-darkBorder">
+                <button onclick="closeModal('schematicModal')" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-400 bg-darkHover transition">إلغاء</button>
+                <button onclick="saveSchematicCard()" class="px-4 py-2 rounded-xl text-xs font-extrabold bg-brandEmerald text-darkBase hover:bg-emerald-400 transition">حفظ الكارت</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer Information -->
+    <footer class="border-t border-darkBorder bg-darkCard/50 py-3 px-4 text-center text-xs text-slate-500">
+        نظام إدارة وملاحة مخططات المطحن الهندسي &copy; 2026 | File-to-File Navigation System
+    </footer>
+
+    <script>
+        // Preset Initial Data
+        const defaultCategories = [
+            {
+                id: 'cat-conveyors',
+                title: 'قسم السيور والنواقل',
+                desc: 'جميع مخططات سيور نقل القمح والردة والبراريم والسنادك',
+                icon: 'fa-arrows-split-up-and-left',
+                cards: [
+                    { id: 'c-1', title: 'سير نقل القمح الخام C01', fileName: 'conveyor_c01.html', code: 'C01-ELE', type: 'دائرة كنترول وبور', desc: 'مخطط دائرة التحكم والمحرك الرئيسي لسير التغذية C01' },
+                    { id: 'c-2', title: 'بريمة نقل الردة B02', fileName: 'screw_b02.html', code: 'B02-ELE', type: 'دائرة كنترول وبور', desc: 'مخطط الانترلوك والحماية لبريمة الردة الرئيسية' },
+                    { id: 'c-3', title: 'ساقية نقل القمح الرئيسية E01', fileName: 'elevator_e01.html', code: 'E01-PNEU', type: 'مخطط نيوماتيك', desc: 'مخطط الفرامل والنيوماتيك لساقية القمح E01' }
+                ]
+            },
+            {
+                id: 'cat-mcc',
+                title: 'لوحات القوى والتحكم MCC',
+                desc: 'لوحات التوزيع، قواطع المحركات، والكونتاكتورات',
+                icon: 'fa-bolt',
+                cards: [
+                    { id: 'c-4', title: 'لوحة التوزيع الرئيسية MCC-01', fileName: 'mcc_01_main.html', code: 'MCC-01', type: 'دائرة كنترول وبور', desc: 'مخطط القاطع الرئيسي وخطوط التغذية لـ MCC-01' },
+                    { id: 'c-5', title: 'لوحة المحركات والبادئات MCC-02', fileName: 'mcc_02_starters.html', code: 'MCC-02', type: 'دائرة كنترول وبور', desc: 'مخطط بادئات الحركة Star-Delta للمحركات الكبيرة' }
+                ]
+            },
+            {
+                id: 'cat-cleaning',
+                title: 'قسم التنظيف والفرز',
+                desc: 'مخططات الغرابيل، الفرازات، وشافطات الأتربة',
+                icon: 'fa-filter',
+                cards: [
+                    { id: 'c-6', title: 'غربال تنظيف القمح الرئيسي', fileName: 'cleaning_separator.html', code: 'SEP-01', type: 'دائرة كنترول وبور', desc: 'مخطط محركات الاهتزاز والشفط للغربال' }
+                ]
+            },
+            {
+                id: 'cat-milling',
+                title: 'قسم الطحن والإنتاج',
+                desc: 'مخططات الفراكات والمطاحن وفرازات الدقيق',
+                icon: 'fa-gear',
+                cards: [
+                    { id: 'c-7', title: 'فراكة الطحن الأولى R01', fileName: 'roller_mill_r01.html', code: 'R01-PLC', type: 'خريطة PLC', desc: 'مخطط الحساسات وضبط التغذية الآلية للفراكة' }
+                ]
+            }
+        ];
+
+        // State variables
+        let appData = [];
+        let currentCategoryId = null; // null = Main level view, string = Inside category view
+
+        // Initialize Application
+        window.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            renderView();
+        });
+
+        // Load data from LocalStorage or use defaults
+        function loadData() {
+            const saved = localStorage.getItem('mill_hub_data_v2');
+            if (saved) {
+                try {
+                    appData = JSON.parse(saved);
+                } catch(e) {
+                    appData = defaultCategories;
+                }
+            } else {
+                appData = defaultCategories;
+                saveData();
+            }
+        }
+
+        // Save data to LocalStorage
+        function saveData() {
+            localStorage.setItem('mill_hub_data_v2', JSON.stringify(appData));
+        }
+
+        // Render current view depending on level (Main Categories vs Schematics Cards)
+        function renderView() {
+            const grid = document.getElementById('dynamicGrid');
+            const viewTitle = document.getElementById('viewSectionTitle');
+            const badge = document.getElementById('itemCountBadge');
+            const backBtn = document.getElementById('backToCatBtn');
+            const breadcrumbSub = document.getElementById('breadcrumbSubNav');
+            const addBtnText = document.getElementById('primaryAddBtnText');
+
+            grid.innerHTML = '';
+
+            if (currentCategoryId === null) {
+                // LEVEL 1: Main Categories View
+                viewTitle.textContent = 'التصنيفات الرئيسية للمطحن';
+                badge.textContent = `إجمالي التصنيفات: ${appData.length}`;
+                backBtn.classList.add('hidden');
+                breadcrumbSub.classList.add('hidden');
+                addBtnText.textContent = 'إضافة تصنيف جديد';
+
+                if (appData.length === 0) {
+                    grid.innerHTML = `
+                        <div class="col-span-full py-16 text-center text-slate-500 bg-darkCard border border-darkBorder rounded-2xl">
+                            <i class="fa-solid fa-folder-open text-4xl mb-3 text-slate-600 block"></i>
+                            <p class="font-bold text-sm text-slate-300">لا توجد تصنيفات رئيسية حالياً.</p>
+                            <p class="text-xs text-slate-500 mt-1">اضغط على "إضافة تصنيف جديد" للبدء.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                appData.forEach(cat => {
+                    const cardCount = cat.cards ? cat.cards.length : 0;
+                    const card = document.createElement('div');
+                    card.className = 'card-hover bg-darkCard border border-darkBorder rounded-2xl p-5 cursor-pointer flex flex-col justify-between group relative overflow-hidden';
+                    card.onclick = () => openCategory(cat.id);
+
+                    card.innerHTML = `
+                        <div class="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-brandCyan to-brandBlue opacity-60 group-hover:opacity-100 transition"></div>
+                        
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="w-12 h-12 rounded-xl bg-darkBase border border-darkBorder text-brandCyan flex items-center justify-center text-xl group-hover:border-brandCyan/50 transition">
+                                    <i class="fa-solid ${cat.icon || 'fa-folder'}"></i>
+                                </div>
+                                
+                                <!-- Edit/Delete Category Actions -->
+                                <div class="flex items-center gap-1">
+                                    <button onclick="event.stopPropagation(); editCategory('${cat.id}')" title="تعديل التصنيف" class="p-1.5 text-slate-500 hover:text-brandCyan transition">
+                                        <i class="fa-solid fa-pen-to-square text-xs"></i>
+                                    </button>
+                                    <button onclick="event.stopPropagation(); deleteCategory('${cat.id}')" title="حذف التصنيف" class="p-1.5 text-slate-500 hover:text-brandRose transition">
+                                        <i class="fa-solid fa-trash-can text-xs"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <h3 class="text-base font-extrabold text-white group-hover:text-brandCyan transition mb-1.5">
+                                ${cat.title}
+                            </h3>
+                            <p class="text-xs text-slate-400 line-clamp-2 leading-relaxed mb-4">
+                                ${cat.desc || 'اضغط لاستعراض كروت المخططات الخاصة بهذا القسم.'}
+                            </p>
+                        </div>
+
+                        <div class="pt-3 border-t border-darkBorder/80 flex items-center justify-between text-xs">
+                            <span class="text-slate-400 font-semibold flex items-center gap-1">
+                                <i class="fa-solid fa-layer-group text-brandGold"></i>
+                                <span>${cardCount} كروت مخططات</span>
+                            </span>
+                            <span class="text-brandCyan font-bold flex items-center gap-1 group-hover:translate-x-[-4px] transition">
+                                <span>دخول القسم</span>
+                                <i class="fa-solid fa-arrow-left text-[10px]"></i>
+                            </span>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+
+            } else {
+                // LEVEL 2: Schematic Cards View Inside Selected Category
+                const category = appData.find(c => c.id === currentCategoryId);
+                if (!category) {
+                    showMainCategories();
+                    return;
+                }
+
+                viewTitle.textContent = `كروت مخططات: ${category.title}`;
+                badge.textContent = `عدد الكروت: ${category.cards ? category.cards.length : 0}`;
+                backBtn.classList.remove('hidden');
+                
+                document.getElementById('breadcrumbCategoryTitle').textContent = category.title;
+                breadcrumbSub.classList.remove('hidden');
+                breadcrumbSub.classList.add('flex');
+                
+                addBtnText.textContent = 'إضافة كارت جديد';
+
+                if (!category.cards || category.cards.length === 0) {
+                    grid.innerHTML = `
+                        <div class="col-span-full py-16 text-center text-slate-500 bg-darkCard border border-darkBorder rounded-2xl">
+                            <i class="fa-solid fa-file-circle-xmark text-4xl mb-3 text-slate-600 block"></i>
+                            <p class="font-bold text-sm text-slate-300">لا توجد كروت مخططات داخل هذا التصنيف.</p>
+                            <p class="text-xs text-slate-500 mt-1">اضغط على "إضافة كارت جديد" لربطه بصفحة HTML مستقلة.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                category.cards.forEach(cardData => {
+                    const card = document.createElement('div');
+                    card.className = 'card-hover bg-darkCard border border-darkBorder rounded-2xl p-5 cursor-pointer flex flex-col justify-between group relative overflow-hidden';
+                    
+                    // Direct HTML File Navigation on click
+                    card.onclick = () => navigateToPage(cardData.fileName);
+
+                    card.innerHTML = `
+                        <div class="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-brandEmerald to-brandCyan opacity-60 group-hover:opacity-100 transition"></div>
+
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="bg-brandEmerald/10 text-brandEmerald border border-brandEmerald/20 font-bold text-[10px] px-2.5 py-0.5 rounded-lg">
+                                    ${cardData.type || 'مخطط هندسي'}
+                                </span>
+
+                                <div class="flex items-center gap-1">
+                                    <button onclick="event.stopPropagation(); editSchematicCard('${cardData.id}')" title="تعديل الكارت" class="p-1.5 text-slate-500 hover:text-brandCyan transition">
+                                        <i class="fa-solid fa-pen-to-square text-xs"></i>
+                                    </button>
+                                    <button onclick="event.stopPropagation(); deleteSchematicCard('${cardData.id}')" title="حذف الكارت" class="p-1.5 text-slate-500 hover:text-brandRose transition">
+                                        <i class="fa-solid fa-trash-can text-xs"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <h3 class="text-base font-extrabold text-white group-hover:text-brandEmerald transition mb-1">
+                                ${cardData.title}
+                            </h3>
+
+                            <div class="flex items-center gap-2 text-xs font-mono text-brandCyan bg-darkBase px-2.5 py-1 rounded-lg border border-darkBorder w-fit mb-3 dir-ltr">
+                                <i class="fa-solid fa-file-code text-[11px]"></i>
+                                <span>${cardData.fileName}</span>
+                            </div>
+
+                            <p class="text-xs text-slate-400 line-clamp-2 leading-relaxed mb-4">
+                                ${cardData.desc || 'انقر للانتقال المباشر لصفحة هذا المخطط.'}
+                            </p>
+                        </div>
+
+                        <div class="pt-3 border-t border-darkBorder/80 flex items-center justify-between text-xs">
+                            <span class="text-slate-400 font-mono text-[11px]">
+                                ID: ${cardData.code || 'N/A'}
+                            </span>
+
+                            <span class="text-brandEmerald font-bold flex items-center gap-1 group-hover:translate-x-[-4px] transition bg-brandEmerald/10 group-hover:bg-brandEmerald group-hover:text-darkBase px-2.5 py-1 rounded-lg border border-brandEmerald/20">
+                                <span>فتح الصفحة</span>
+                                <i class="fa-solid fa-arrow-left text-[10px]"></i>
+                            </span>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            }
+        }
+
+        // Navigation Functions
+        function openCategory(catId) {
+            currentCategoryId = catId;
+            document.getElementById('searchInput').value = '';
+            renderView();
+        }
+
+        function showMainCategories() {
+            currentCategoryId = null;
+            document.getElementById('searchInput').value = '';
+            renderView();
+        }
+
+        // Direct File Navigation Helper
+        function navigateToPage(fileName) {
+            if (!fileName) return;
+            const target = fileName.endsWith('.html') ? fileName : `${fileName}.html`;
+            window.location.href = target;
+        }
+
+        // Primary Add Button Routing
+        function handleAddAction() {
+            if (currentCategoryId === null) {
+                // Open Add Category Modal
+                resetCategoryForm();
+                openModal('categoryModal');
+            } else {
+                // Open Add Schematic Card Modal
+                resetSchematicForm();
+                openModal('schematicModal');
+            }
+        }
+
+        // Save Main Category (Create or Edit)
+        function saveCategory() {
+            const editId = document.getElementById('editCatId').value;
+            const title = document.getElementById('catTitleInput').value.trim();
+            const desc = document.getElementById('catDescInput').value.trim();
+            const icon = document.getElementById('catIconInput').value;
+
+            if (!title) {
+                alert('يرجى كتابة اسم التصنيف الرئيسي.');
+                return;
+            }
+
+            if (editId) {
+                const cat = appData.find(c => c.id === editId);
+                if (cat) {
+                    cat.title = title;
+                    cat.desc = desc;
+                    cat.icon = icon;
+                }
+            } else {
+                const newCat = {
+                    id: 'cat-' + Date.now(),
+                    title: title,
+                    desc: desc,
+                    icon: icon,
+                    cards: []
+                };
+                appData.push(newCat);
+            }
+
+            saveData();
+            renderView();
+            closeModal('categoryModal');
+        }
+
+        function editCategory(catId) {
+            const cat = appData.find(c => c.id === catId);
+            if (!cat) return;
+
+            document.getElementById('editCatId').value = cat.id;
+            document.getElementById('catTitleInput').value = cat.title;
+            document.getElementById('catDescInput').value = cat.desc || '';
+            document.getElementById('catIconInput').value = cat.icon || 'fa-folder';
+
+            document.getElementById('catModalTitle').innerHTML = `
+                <i class="fa-solid fa-pen-to-square text-brandCyan"></i> تعديل التصنيف الرئيسي
+            `;
+
+            openModal('categoryModal');
+        }
+
+        function deleteCategory(catId) {
+            const cat = appData.find(c => c.id === catId);
+            if (cat && confirm(`هل أنت تأكد من حذف التصنيف "${cat.title}" وجميع الكروت بداخله؟`)) {
+                appData = appData.filter(c => c.id !== catId);
+                saveData();
+                renderView();
+            }
+        }
+
+        function resetCategoryForm() {
+            document.getElementById('editCatId').value = '';
+            document.getElementById('catTitleInput').value = '';
+            document.getElementById('catDescInput').value = '';
+            document.getElementById('catIconInput').value = 'fa-arrows-split-up-and-left';
+            document.getElementById('catModalTitle').innerHTML = `
+                <i class="fa-solid fa-folder-plus text-brandCyan"></i> إضافة تصنيف جديد
+            `;
+        }
+
+        // Save Schematic Card (Create or Edit)
+        function saveSchematicCard() {
+            if (!currentCategoryId) return;
+
+            const category = appData.find(c => c.id === currentCategoryId);
+            if (!category) return;
+
+            const editId = document.getElementById('editCardId').value;
+            const title = document.getElementById('cardTitleInput').value.trim();
+            let fileName = document.getElementById('cardFileInput').value.trim();
+            const code = document.getElementById('cardCodeInput').value.trim();
+            const type = document.getElementById('cardTypeInput').value;
+            const desc = document.getElementById('cardDescInput').value.trim();
+
+            if (!title || !fileName) {
+                alert('يرجى تعبئة اسم الكارت واسم ملف HTML الموجه له.');
+                return;
+            }
+
+            if (!fileName.endsWith('.html')) {
+                fileName += '.html';
+            }
+
+            if (!category.cards) category.cards = [];
+
+            if (editId) {
+                const card = category.cards.find(c => c.id === editId);
+                if (card) {
+                    card.title = title;
+                    card.fileName = fileName;
+                    card.code = code;
+                    card.type = type;
+                    card.desc = desc;
+                }
+            } else {
+                const newCard = {
+                    id: 'card-' + Date.now(),
+                    title: title,
+                    fileName: fileName,
+                    code: code || 'ELE-01',
+                    type: type,
+                    desc: desc
+                };
+                category.cards.push(newCard);
+            }
+
+            saveData();
+            renderView();
+            closeModal('schematicModal');
+        }
+
+        function editSchematicCard(cardId) {
+            const category = appData.find(c => c.id === currentCategoryId);
+            if (!category || !category.cards) return;
+
+            const card = category.cards.find(c => c.id === cardId);
+            if (!card) return;
+
+            document.getElementById('editCardId').value = card.id;
+            document.getElementById('cardTitleInput').value = card.title;
+            document.getElementById('cardFileInput').value = card.fileName;
+            document.getElementById('cardCodeInput').value = card.code || '';
+            document.getElementById('cardTypeInput').value = card.type || 'دائرة كنترول وبور';
+            document.getElementById('cardDescInput').value = card.desc || '';
+
+            document.getElementById('schematicModalTitle').innerHTML = `
+                <i class="fa-solid fa-pen-to-square text-brandEmerald"></i> تعديل كارت المخطط
+            `;
+
+            openModal('schematicModal');
+        }
+
+        function deleteSchematicCard(cardId) {
+            const category = appData.find(c => c.id === currentCategoryId);
+            if (!category || !category.cards) return;
+
+            const card = category.cards.find(c => c.id === cardId);
+            if (card && confirm(`هل أنت متاكد من حذف الكارت "${card.title}"؟`)) {
+                category.cards = category.cards.filter(c => c.id !== cardId);
+                saveData();
+                renderView();
+            }
+        }
+
+        function resetSchematicForm() {
+            document.getElementById('editCardId').value = '';
+            document.getElementById('cardTitleInput').value = '';
+            document.getElementById('cardFileInput').value = '';
+            document.getElementById('cardCodeInput').value = '';
+            document.getElementById('cardDescInput').value = '';
+            document.getElementById('schematicModalTitle').innerHTML = `
+                <i class="fa-solid fa-file-circle-plus text-brandEmerald"></i> إضافة كارت مخطط جديد
+            `;
+        }
+
+        // Search Filter
+        function handleSearch() {
+            const query = document.getElementById('searchInput').value.toLowerCase().trim();
+            const grid = document.getElementById('dynamicGrid');
+
+            if (!query) {
+                renderView();
+                return;
+            }
+
+            grid.innerHTML = '';
+
+            if (currentCategoryId === null) {
+                // Search Main Categories
+                const filtered = appData.filter(cat => 
+                    cat.title.toLowerCase().includes(query) ||
+                    (cat.desc && cat.desc.toLowerCase().includes(query))
+                );
+
+                if (filtered.length === 0) {
+                    grid.innerHTML = `<div class="col-span-full py-12 text-center text-slate-500 text-xs">لا توجد تصنيفات تطابق بحثك.</div>`;
+                    return;
+                }
+
+                filtered.forEach(cat => {
+                    // Render matched categories
+                    const cardCount = cat.cards ? cat.cards.length : 0;
+                    const card = document.createElement('div');
+                    card.className = 'card-hover bg-darkCard border border-darkBorder rounded-2xl p-5 cursor-pointer flex flex-col justify-between';
+                    card.onclick = () => openCategory(cat.id);
+                    card.innerHTML = `
+                        <h3 class="text-base font-extrabold text-white mb-2">${cat.title}</h3>
+                        <p class="text-xs text-slate-400 mb-4">${cat.desc || ''}</p>
+                        <span class="text-xs text-brandCyan font-bold">${cardCount} كروت مخططات</span>
+                    `;
+                    grid.appendChild(card);
+                });
+
+            } else {
+                // Search Schematic Cards inside Category
+                const category = appData.find(c => c.id === currentCategoryId);
+                if (!category || !category.cards) return;
+
+                const filteredCards = category.cards.filter(card => 
+                    card.title.toLowerCase().includes(query) ||
+                    card.fileName.toLowerCase().includes(query) ||
+                    (card.code && card.code.toLowerCase().includes(query)) ||
+                    (card.desc && card.desc.toLowerCase().includes(query))
+                );
+
+                if (filteredCards.length === 0) {
+                    grid.innerHTML = `<div class="col-span-full py-12 text-center text-slate-500 text-xs">لا توجد كروت تطابق بحثك.</div>`;
+                    return;
+                }
+
+                filteredCards.forEach(cardData => {
+                    const card = document.createElement('div');
+                    card.className = 'card-hover bg-darkCard border border-darkBorder rounded-2xl p-5 cursor-pointer flex flex-col justify-between';
+                    card.onclick = () => navigateToPage(cardData.fileName);
+                    card.innerHTML = `
+                        <h3 class="text-base font-extrabold text-white mb-1">${cardData.title}</h3>
+                        <div class="text-xs font-mono text-brandCyan mb-2">${cardData.fileName}</div>
+                        <p class="text-xs text-slate-400">${cardData.desc || ''}</p>
+                    `;
+                    grid.appendChild(card);
+                });
+            }
+        }
+
+        // Export JSON Data Backup
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", "mill_schematics_data.json");
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        // Trigger Import File Dialog
+        function triggerImport() {
+            document.getElementById('importFileInput').click();
+        }
+
+        // Import JSON Data File
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (Array.isArray(imported)) {
+                        appData = imported;
+                        saveData();
+                        showMainCategories();
+                        alert('تم استيراد بيانات المخططات بنجاح!');
+                    } else {
+                        alert('تنسيق ملف JSON غير صحيح.');
+                    }
+                } catch(err) {
+                    alert('حدث خطأ أثناء قراءة الملف.');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Reset to Factory Default Data
+        function confirmReset() {
+            if (confirm('هل أنت متاكد من إعادة تعيين كافة البيانات إلى البيانات الافتراضية؟')) {
+                appData = defaultCategories;
+                saveData();
+                showMainCategories();
+            }
+        }
+
+        // Modal Helpers
+        function openModal(id) {
+            const modal = document.getElementById(id);
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+        }
+
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+    </script>
+</body>
+</html>
